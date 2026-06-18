@@ -5,6 +5,7 @@ import { Colors } from '../../constants/Colors';
 import { useBookStore } from '../../store/useBookStore';
 import { CategoryPills } from '../../components/CategoryPills';
 import { GridBookCard } from '../../components/GridBookCard';
+import { FloatingActionButton } from '../../components/FloatingActionButton';
 import { SymbolView } from 'expo-symbols';
 
 const CATEGORIES = ['كتب عامة', 'الأدب', 'روايات', 'علوم دينية'];
@@ -60,6 +61,8 @@ export default function LibraryScreen() {
           />
         )}
       />
+
+      <FloatingActionButton onPress={() => router.push('/book/add')} iconName="plus" />
     </SafeAreaView>
   );
 }

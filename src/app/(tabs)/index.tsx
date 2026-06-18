@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, SafeAreaView, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors, Shadows } from '../../constants/Colors';
@@ -36,27 +36,40 @@ const GoalCard = () => {
 export default function HomeScreen() {
   const router = useRouter();
   const { profile } = useProfileStore();
-  const books = useBookStore((state) => state.books);
+  const { books, seedMockData } = useBookStore();
+
+  useEffect(() => {
+    // Automatically seed data if library is completely empty to ensure the UI is populated
+    if (books.length === 0) {
+      seedMockData();
+    }
+  }, [books.length, seedMockData]);
 
   const readingBooks = books.filter(b => b.status === 'Reading' || b.status === 'Completed');
   const recommendedBooks = books.filter(b => b.status === 'To Read');
-  // For dummy purposes, we'll just slice some books for favorites
-  const favoriteBooks = books.slice(0, 3);
+  const favoriteBooks = books.filter(b => b.rating >= 4);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* Header */}
+        {/* Header - Fixed overlapping issue by using standard row and space-between */}
         <View style={styles.header}>
+          <View style={styles.greetingContainer}>
+            <Text style={styles.greetingSubtitle}>طبت وطابت قراءتك</Text>
+            <View style={styles.greetingTitleRow}>
+              <Text style={styles.greetingTitle}>مرحباً {profile.name}</Text>
+              <SymbolView name="wifi" size={16} tintColor={Colors.text} style={{ marginLeft: 8 }} />
+            </View>
+          </View>
           <View style={styles.avatarContainer}>
              <View style={styles.avatar}>
                <SymbolView name="person.fill" size={24} tintColor={Colors.primary} />
              </View>
-          </View>
-          <View style={styles.greetingContainer}>
-            <Text style={styles.greetingTitle}>مرحباً {profile.name}</Text>
-            <Text style={styles.greetingSubtitle}>طبت وطابت قراءتك</Text>
+             {/* Small settings icon overlay as seen in screenshot */}
+             <View style={styles.settingsOverlay}>
+                <SymbolView name="gearshape.fill" size={12} tintColor={Colors.surface} />
+             </View>
           </View>
         </View>
 
@@ -109,7 +122,7 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           data={favoriteBooks}
-          keyExtractor={(item) => `fav-${item.id}`}
+          keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <HorizontalBookCard 
               book={item} 
@@ -132,14 +145,33 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     marginTop: 16,
-    marginBottom: 8,
+    marginBottom: 16,
+  },
+  greetingContainer: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  greetingTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  greetingTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.text,
+  },
+  greetingSubtitle: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginBottom: 4,
   },
   avatarContainer: {
-    marginLeft: 12,
+    position: 'relative',
   },
   avatar: {
     width: 48,
@@ -149,19 +181,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  greetingContainer: {
-    flex: 1,
-  },
-  greetingTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Colors.text,
-    textAlign: 'right',
-  },
-  greetingSubtitle: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    textAlign: 'right',
+  settingsOverlay: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    backgroundColor: Colors.textMuted,
+    borderRadius: 12,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.background,
   },
   goalCard: {
     backgroundColor: Colors.surface,
@@ -169,7 +200,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginHorizontal: 20,
     marginVertical: 12,
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
@@ -178,19 +209,17 @@ const styles = StyleSheet.create({
   },
   goalContent: {
     flex: 1,
-    marginLeft: 16,
+    alignItems: 'flex-start',
   },
   goalTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: Colors.text,
-    textAlign: 'right',
     marginBottom: 4,
   },
   goalSubtitle: {
     fontSize: 12,
     color: Colors.textMuted,
-    textAlign: 'right',
   },
   circleContainer: {
     width: 50,

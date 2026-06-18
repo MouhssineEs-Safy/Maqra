@@ -1,15 +1,23 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, SafeAreaView, Alert, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Shadows } from '../../constants/Colors';
 import { useBookStore } from '../../store/useBookStore';
+import { useSessionStore } from '../../store/useSessionStore';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
+import { ProgressBar } from '../../components/ProgressBar';
 
 export default function BookDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const book = useBookStore((state) => state.books.find((b) => b.id === id));
+  const updateProgress = useBookStore((state) => state.updateProgress);
+  const deleteBook = useBookStore((state) => state.deleteBook);
+  const addSession = useSessionStore((state) => state.addSession);
+
+  const [pagesToLog, setPagesToLog] = useState('');
+  const [isLogging, setIsLogging] = useState(false);
 
   if (!book) {
     return (
@@ -19,13 +27,55 @@ export default function BookDetailsScreen() {
     );
   }
 
+  const handleDelete = () => {
+    Alert.alert('حذف الكتاب', 'هل أنت متأكد من رغبتك في حذف هذا الكتاب؟', [
+      { text: 'إلغاء', style: 'cancel' },
+      { text: 'حذف', style: 'destructive', onPress: () => {
+        deleteBook(book.id);
+        router.back();
+      }}
+    ]);
+  };
+
+  const handleLogReading = () => {
+    const pages = parseInt(pagesToLog, 10);
+    if (isNaN(pages) || pages <= 0) {
+      Alert.alert('تنبيه', 'يرجى إدخال عدد صفحات صحيح');
+      return;
+    }
+    
+    // Create a dummy session duration (e.g. 1 minute per page for demo)
+    const duration = pages * 60; 
+    addSession({
+      bookId: book.id,
+      startTime: Date.now() - (duration * 1000),
+      endTime: Date.now(),
+      duration,
+      pagesRead: pages
+    });
+
+    updateProgress(book.id, pages);
+    setPagesToLog('');
+    setIsLogging(false);
+  };
+
+  const progress = book.totalPages > 0 ? book.currentPage / book.totalPages : 0;
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable style={styles.headerIcon}>
-           <SymbolView name="bookmark" size={24} tintColor={Colors.text} />
-        </Pressable>
+        <View style={styles.headerLeftIcons}>
+          <Pressable style={styles.headerIcon} onPress={handleDelete}>
+             <SymbolView name="trash" size={24} tintColor={Colors.text} />
+          </Pressable>
+          <Pressable style={styles.headerIcon} onPress={() => router.push(`/book/edit/${book.id}`)}>
+             <SymbolView name="pencil" size={24} tintColor={Colors.text} />
+          </Pressable>
+          <Pressable style={styles.headerIcon}>
+             <SymbolView name="bookmark" size={24} tintColor={Colors.text} />
+          </Pressable>
+        </View>
         <Pressable style={styles.headerIcon} onPress={() => router.back()}>
            <SymbolView name="arrow.right" size={24} tintColor={Colors.text} />
         </Pressable>
@@ -35,7 +85,12 @@ export default function BookDetailsScreen() {
         {/* Cover */}
         <View style={styles.coverContainer}>
           {book.coverImage ? (
-            <Image source={book.coverImage} style={styles.cover} contentFit="cover" />
+            <Image 
+              source={{ uri: book.coverImage }} 
+              style={styles.cover} 
+              contentFit="cover" 
+              transition={300}
+            />
           ) : (
             <View style={styles.placeholderCover}>
               <Text style={styles.placeholderText}>{book.title.charAt(0)}</Text>
@@ -95,11 +150,33 @@ export default function BookDetailsScreen() {
       </ScrollView>
 
       {/* Floating Action Button */}
-      <View style={styles.footer}>
-        <Pressable style={styles.readButton}>
-          <Text style={styles.readButtonText}>قراءة الآن</Text>
-        </Pressable>
-      </View>
+      {!isLogging ? (
+        <View style={styles.footer}>
+          <Pressable style={styles.readButton} onPress={() => setIsLogging(true)}>
+            <Text style={styles.readButtonText}>قراءة الآن</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.footerLog}>
+          <Text style={styles.logTitle}>كم صفحة قرأت اليوم؟</Text>
+          <View style={styles.logInputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="عدد الصفحات"
+              keyboardType="number-pad"
+              value={pagesToLog}
+              onChangeText={setPagesToLog}
+              textAlign="right"
+            />
+            <Pressable style={styles.logButton} onPress={handleLogReading}>
+              <Text style={styles.logButtonText}>حفظ</Text>
+            </Pressable>
+            <Pressable style={styles.cancelButton} onPress={() => setIsLogging(false)}>
+              <SymbolView name="xmark" size={20} tintColor={Colors.textMuted} />
+            </Pressable>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -245,5 +322,58 @@ const styles = StyleSheet.create({
     color: Colors.surface,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  headerLeftIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  footerLog: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    backgroundColor: Colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    ...Shadows.floating,
+  },
+  logTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: Colors.text,
+    textAlign: 'right',
+    marginBottom: 12,
+  },
+  logInputContainer: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    height: 48,
+    fontSize: 16,
+  },
+  logButton: {
+    backgroundColor: Colors.primary,
+    height: 48,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginRight: 12, // margin on right for RTL
+  },
+  logButtonText: {
+    color: Colors.surface,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  cancelButton: {
+    padding: 12,
   },
 });

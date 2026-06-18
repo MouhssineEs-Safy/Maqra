@@ -18,7 +18,12 @@ export const HorizontalBookCard: React.FC<HorizontalBookCardProps> = ({ book, on
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.imageContainer}>
         {book.coverImage ? (
-          <Image source={book.coverImage} style={styles.image} contentFit="cover" />
+          <Image 
+            source={{ uri: book.coverImage }} 
+            style={styles.image} 
+            contentFit="cover" 
+            transition={300}
+          />
         ) : (
           <View style={styles.placeholderImage}>
             <Text style={styles.placeholderText}>{book.title.charAt(0)}</Text>
