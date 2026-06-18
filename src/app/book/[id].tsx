@@ -1,18 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, Shadows } from '../../constants/Colors';
 import { useBookStore } from '../../store/useBookStore';
-import { ProgressBar } from '../../components/ProgressBar';
+import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 
 export default function BookDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const book = useBookStore((state) => state.books.find((b) => b.id === id));
-  const updateProgress = useBookStore((state) => state.updateProgress);
-
-  const [pagesToLog, setPagesToLog] = useState('');
 
   if (!book) {
     return (
@@ -22,67 +19,88 @@ export default function BookDetailsScreen() {
     );
   }
 
-  const progress = book.currentPage / book.totalPages;
-
-  const handleLogReading = () => {
-    const pages = parseInt(pagesToLog, 10);
-    if (isNaN(pages) || pages <= 0) {
-      Alert.alert('Invalid Input', 'Please enter a valid number of pages.');
-      return;
-    }
-    updateProgress(book.id, pages);
-    setPagesToLog('');
-  };
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.coverContainer}>
-        {/* Full size cover placeholder */}
-        <View style={styles.largeCover}>
-           <Text style={styles.coverTitle}>{book.title.charAt(0)}</Text>
-        </View>
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable style={styles.headerIcon}>
+           <SymbolView name="bookmark" size={24} tintColor={Colors.text} />
+        </Pressable>
+        <Pressable style={styles.headerIcon} onPress={() => router.back()}>
+           <SymbolView name="arrow.right" size={24} tintColor={Colors.text} />
+        </Pressable>
       </View>
 
-      <View style={styles.detailsContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Cover */}
+        <View style={styles.coverContainer}>
+          {book.coverImage ? (
+            <Image source={book.coverImage} style={styles.cover} contentFit="cover" />
+          ) : (
+            <View style={styles.placeholderCover}>
+              <Text style={styles.placeholderText}>{book.title.charAt(0)}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Info */}
         <Text style={styles.title}>{book.title}</Text>
-        <Text style={styles.author}>by {book.author}</Text>
-        
+        <Text style={styles.author}>{book.author}</Text>
+
+        {/* Badges */}
         <View style={styles.badgesRow}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{book.language}</Text>
-          </View>
-          <View style={[styles.badge, { backgroundColor: Colors.surface }]}>
-            <Text style={[styles.badgeText, { color: Colors.text }]}>{book.status}</Text>
-          </View>
+          <View style={styles.badge}><Text style={styles.badgeText}>تطوير الذات</Text></View>
+          <View style={styles.badge}><Text style={styles.badgeText}>{book.totalPages} صفحة</Text></View>
+          <View style={styles.badge}><Text style={styles.badgeText}>اللغة العربية</Text></View>
         </View>
 
-        <View style={styles.progressCard}>
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>Reading Progress</Text>
-            <Text style={styles.progressText}>
-              {book.currentPage} / {book.totalPages} pages ({Math.round(progress * 100)}%)
+        {/* About */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>عن الكتاب</Text>
+          <Text style={styles.description}>
+            مجموعة من المقالات التي تتناول قضايا اجتماعية وإنسانية بأسلوب أدبي يجمع بين البساطة والعمق، ويدعو للتأمل في تفاصيل الحياة اليومية والوعي بالذات.
+          </Text>
+        </View>
+
+        {/* Quotes */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>أبرز النصوص</Text>
+          <View style={styles.quoteCard}>
+            <SymbolView name="chevron.left" size={20} tintColor={Colors.textMuted} />
+            <Text style={styles.quoteText}>
+              "إن أجمل لحظات الحياة هي تلك التي نقضيها في محاولة فهم أنفسنا، بعيداً عن ضجيج توقعات الآخرين."
             </Text>
+            <SymbolView name="chevron.right" size={20} tintColor={Colors.textMuted} />
           </View>
-          <ProgressBar progress={progress} height={12} />
         </View>
 
-        <View style={styles.logCard}>
-          <Text style={styles.logTitle}>Log Reading</Text>
-          <View style={styles.logInputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Pages read..."
-              keyboardType="number-pad"
-              value={pagesToLog}
-              onChangeText={setPagesToLog}
-            />
-            <Pressable style={styles.logButton} onPress={handleLogReading}>
-              <Text style={styles.logButtonText}>Save</Text>
-            </Pressable>
+        {/* Rating Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>تقييمك</Text>
+          <View style={styles.ratingContainer}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Pressable key={star} style={styles.star}>
+                <SymbolView 
+                  name={star <= (book.rating || 0) ? "star.fill" : "star"} 
+                  size={32} 
+                  tintColor={star <= (book.rating || 0) ? "#FFD700" : Colors.textMuted} 
+                />
+              </Pressable>
+            ))}
           </View>
         </View>
+        
+        {/* Padding for absolute button */}
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* Floating Action Button */}
+      <View style={styles.footer}>
+        <Pressable style={styles.readButton}>
+          <Text style={styles.readButtonText}>قراءة الآن</Text>
+        </Pressable>
       </View>
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -91,122 +109,141 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  scrollContent: {
-    paddingBottom: 40,
-  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  coverContainer: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 24,
-    backgroundColor: Colors.border,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
-  largeCover: {
-    width: 200,
-    height: 300,
-    backgroundColor: Colors.majorelleBlue,
-    borderRadius: 16,
-    justifyContent: 'center',
+  headerIcon: {
+    padding: 8,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
     alignItems: 'center',
+  },
+  coverContainer: {
+    width: 160,
+    height: 240,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginTop: 12,
+    marginBottom: 24,
     ...Shadows.card,
   },
-  coverTitle: {
-    fontSize: 72,
+  cover: {
+    width: '100%',
+    height: '100%',
+  },
+  placeholderCover: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: Colors.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 48,
     fontWeight: 'bold',
     color: Colors.surface,
   },
-  detailsContainer: {
-    padding: 24,
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    marginTop: -32,
-  },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: Colors.text,
+    textAlign: 'center',
     marginBottom: 8,
   },
   author: {
-    fontSize: 18,
+    fontSize: 16,
     color: Colors.textMuted,
-    marginBottom: 16,
+    textAlign: 'center',
+    marginBottom: 24,
   },
   badgesRow: {
     flexDirection: 'row',
-    marginBottom: 24,
+    justifyContent: 'center',
+    marginBottom: 32,
   },
   badge: {
-    backgroundColor: Colors.terracotta,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-  },
-  badgeText: {
-    color: Colors.surface,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  progressCard: {
-    backgroundColor: Colors.background,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 24,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  progressTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  progressText: {
-    fontSize: 14,
-    color: Colors.textMuted,
-  },
-  logCard: {
-    backgroundColor: Colors.background,
-    padding: 16,
-    borderRadius: 16,
-  },
-  logTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.text,
-    marginBottom: 12,
-  },
-  logInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  input: {
-    flex: 1,
-    backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 44,
-    marginRight: 12,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginHorizontal: 4,
   },
-  logButton: {
-    backgroundColor: Colors.majorelleBlue,
-    paddingHorizontal: 20,
-    height: 44,
-    borderRadius: 8,
-    justifyContent: 'center',
+  badgeText: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    fontWeight: '500',
+  },
+  section: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.text,
+    textAlign: 'right',
+    marginBottom: 12,
+  },
+  description: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    lineHeight: 24,
+    textAlign: 'right',
+  },
+  quoteCard: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.surface,
+    padding: 20,
+    borderRadius: 16,
+    ...Shadows.soft,
   },
-  logButtonText: {
+  quoteText: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.text,
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: 16,
+  },
+  ratingContainer: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  star: {
+    marginHorizontal: 4,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    backgroundColor: Colors.background,
+  },
+  readButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    ...Shadows.floating,
+  },
+  readButtonText: {
     color: Colors.surface,
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

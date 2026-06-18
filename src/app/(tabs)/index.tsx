@@ -1,76 +1,124 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, SafeAreaView } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, FlatList, SafeAreaView, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../constants/Colors';
+import { Colors, Shadows } from '../../constants/Colors';
 import { useBookStore } from '../../store/useBookStore';
 import { useProfileStore } from '../../store/useProfileStore';
-import { BookCard } from '../../components/BookCard';
-import { GoalCard } from '../../components/GoalCard';
-import { FloatingActionButton } from '../../components/FloatingActionButton';
+import { QuoteCard } from '../../components/QuoteCard';
+import { SectionHeader } from '../../components/SectionHeader';
+import { HorizontalBookCard } from '../../components/HorizontalBookCard';
 import { SymbolView } from 'expo-symbols';
 
-export default function LibraryScreen() {
+// Reusable Goal Card styled for the new theme
+const GoalCard = () => {
+  const { profile } = useProfileStore();
+  const books = useBookStore((state) => state.books);
+  const booksReadThisYear = books.filter(b => b.status === 'Completed').length;
+  const progress = profile.yearlyGoal > 0 ? booksReadThisYear / profile.yearlyGoal : 0;
+
+  return (
+    <View style={styles.goalCard}>
+      <View style={styles.goalContent}>
+        <Text style={styles.goalTitle}>هدف القراءة السنوي</Text>
+        <Text style={styles.goalSubtitle}>
+          قرأت {booksReadThisYear} من أصل {profile.yearlyGoal} كتب
+        </Text>
+      </View>
+      <View style={styles.circleContainer}>
+        <View style={styles.circleBackground}>
+           <Text style={styles.circleText}>{Math.round(progress * 100)}%</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+export default function HomeScreen() {
   const router = useRouter();
   const { profile } = useProfileStore();
   const books = useBookStore((state) => state.books);
-  const addBook = useBookStore((state) => state.addBook);
-  const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredBooks = books.filter(book => 
-    book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    book.author.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleAddDummyBook = () => {
-    addBook({
-      title: 'The Great Gatsby',
-      author: 'F. Scott Fitzgerald',
-      language: 'English',
-      totalPages: 218,
-      currentPage: 0,
-      status: 'To Read',
-      rating: 0,
-    });
-  };
+  const readingBooks = books.filter(b => b.status === 'Reading' || b.status === 'Completed');
+  const recommendedBooks = books.filter(b => b.status === 'To Read');
+  // For dummy purposes, we'll just slice some books for favorites
+  const favoriteBooks = books.slice(0, 3);
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Welcome back,</Text>
-          <Text style={styles.name}>{profile.name}</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.avatarContainer}>
+             <View style={styles.avatar}>
+               <SymbolView name="person.fill" size={24} tintColor={Colors.primary} />
+             </View>
+          </View>
+          <View style={styles.greetingContainer}>
+            <Text style={styles.greetingTitle}>مرحباً {profile.name}</Text>
+            <Text style={styles.greetingSubtitle}>طبت وطابت قراءتك</Text>
+          </View>
         </View>
-        <View style={styles.avatar}>
-          <SymbolView name="person.crop.circle.fill" size={40} tintColor={Colors.majorelleBlue} />
-        </View>
-      </View>
 
-      <View style={styles.searchContainer}>
-        <SymbolView name="magnifyingglass" size={20} tintColor={Colors.textMuted} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search books, authors..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor={Colors.textMuted}
+        {/* Goal Card */}
+        <GoalCard />
+
+        {/* Quote Card */}
+        <QuoteCard />
+
+        {/* Continue Reading Section */}
+        <SectionHeader title="واصل القراءة" onPressAll={() => {}} />
+        <FlatList
+          horizontal
+          inverted // RTL scroll
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          data={readingBooks}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <HorizontalBookCard 
+              book={item} 
+              onPress={() => router.push(`/book/${item.id}`)} 
+              showProgress 
+            />
+          )}
         />
-      </View>
 
-      <FlatList
-        data={filteredBooks}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <BookCard 
-            book={item} 
-            onPress={() => router.push(`/book/${item.id}`)} 
-          />
-        )}
-        ListHeaderComponent={<GoalCard />}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+        {/* Recommended Section */}
+        <SectionHeader title="مختارات لك" onPressAll={() => {}} />
+        <FlatList
+          horizontal
+          inverted // RTL scroll
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          data={recommendedBooks}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <HorizontalBookCard 
+              book={item} 
+              onPress={() => router.push(`/book/${item.id}`)} 
+            />
+          )}
+        />
 
-      <FloatingActionButton onPress={handleAddDummyBook} />
+        {/* Favorites Section */}
+        <SectionHeader title="الكتب المفضلة" onPressAll={() => {}} />
+        <FlatList
+          horizontal
+          inverted // RTL scroll
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          data={favoriteBooks}
+          keyExtractor={(item) => `fav-${item.id}`}
+          renderItem={({ item }) => (
+            <HorizontalBookCard 
+              book={item} 
+              onPress={() => router.push(`/book/${item.id}`)} 
+            />
+          )}
+        />
+        
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -80,50 +128,92 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  scrollContent: {
+    paddingBottom: 40,
+  },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 8,
   },
-  greeting: {
-    fontSize: 14,
-    color: Colors.textMuted,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.text,
+  avatarContainer: {
+    marginLeft: 12,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.border,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  greetingContainer: {
+    flex: 1,
+  },
+  greetingTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.text,
+    textAlign: 'right',
+  },
+  greetingSubtitle: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    textAlign: 'right',
+  },
+  goalCard: {
     backgroundColor: Colors.surface,
-    marginHorizontal: 16,
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 20,
     marginVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    height: 44,
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: Colors.border,
+    ...Shadows.soft,
   },
-  searchInput: {
+  goalContent: {
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 16,
+  },
+  goalTitle: {
     fontSize: 16,
+    fontWeight: '700',
+    color: Colors.text,
+    textAlign: 'right',
+    marginBottom: 4,
+  },
+  goalSubtitle: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    textAlign: 'right',
+  },
+  circleContainer: {
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  circleBackground: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 4,
+    borderColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  circleText: {
+    fontSize: 12,
+    fontWeight: 'bold',
     color: Colors.text,
   },
   listContent: {
-    paddingBottom: 100,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
 });
