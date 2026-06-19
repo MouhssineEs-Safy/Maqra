@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, SafeAreaView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, StatusBar } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { useProfileStore } from '../../store/useProfileStore';
 import { useBookStore } from '../../store/useBookStore';
@@ -23,13 +23,13 @@ export default function MoreScreen() {
   const totalReadingHours = Math.floor(totalReadingTime / 3600);
 
   // Compute Streak and Level
-  const streak = 12; // We can compute this dynamically if we have daily sessions logic, for now static 12
+  const streak = 12; 
   const levelBadge = totalBooks > 10 ? 'قارئ متقدم' : totalBooks > 5 ? 'قارئ نشط' : 'قارئ مبتدئ';
 
   const stats = [
-    { title: 'إجمالي الكتب', value: totalBooks, icon: 'book.closed.fill', color: Colors.primary },
+    { title: 'الكتب المقروءة', value: totalBooks, icon: 'book.closed.fill', color: Colors.primary },
     { title: 'إجمالي الصفحات', value: totalPages, icon: 'doc.text.fill', color: '#4CAF50' },
-    { title: 'وقت القراءة', value: `${totalReadingHours} س`, icon: 'clock.fill', color: '#FF9800' },
+    { title: 'ساعات القراءة', value: `${totalReadingHours} س`, icon: 'clock.fill', color: '#FF9800' },
     { title: 'الهدف السنوي', value: profile.yearlyGoal, icon: 'target', color: '#E91E63' },
   ];
 
@@ -50,17 +50,17 @@ export default function MoreScreen() {
 
   const settingsSections = [
     {
-      title: 'الإعدادات',
+      title: 'الإعدادات العامة',
       items: [
         { title: 'تعديل الملف الشخصي', icon: 'person.crop.circle', onPress: () => {}, color: Colors.primary },
-        { title: 'تغيير اللغة', icon: 'globe', onPress: () => {}, color: '#2196F3' },
-        { title: 'هدف القراءة', icon: 'flag', onPress: () => {}, color: '#4CAF50' },
-        { title: 'الإشعارات', icon: 'bell.fill', onPress: () => updateProfile({ notifications: !profile.notifications }), color: '#FF9800' },
-        { title: 'المظهر', icon: 'moon.fill', onPress: () => updateProfile({ theme: profile.theme === 'dark' ? 'light' : 'dark' }), color: '#673AB7' },
+        { title: 'تغيير لغة التطبيق', icon: 'globe', onPress: () => {}, color: '#2196F3' },
+        { title: 'تحديث هدف القراءة', icon: 'flag', onPress: () => {}, color: '#4CAF50' },
+        { title: 'إعدادات الإشعارات', icon: 'bell.fill', onPress: () => updateProfile({ notifications: !profile.notifications }), color: '#FF9800' },
+        { title: 'المظهر (ليلي/نهاري)', icon: 'moon.fill', onPress: () => updateProfile({ theme: profile.theme === 'dark' ? 'light' : 'dark' }), color: '#673AB7' },
       ]
     },
     {
-      title: 'منطقة الخطر',
+      title: 'إدارة البيانات (خطر)',
       items: [
         { 
           title: 'حذف جميع الكتب', 
@@ -69,13 +69,13 @@ export default function MoreScreen() {
           onPress: () => confirmAction('حذف جميع الكتب', 'هل أنت متأكد من حذف جميع الكتب؟ لا يمكن التراجع عن هذا الإجراء.', deleteAllBooks) 
         },
         { 
-          title: 'مسح سجل القراءة', 
+          title: 'مسح سجل القراءة بالكامل', 
           icon: 'clock.badge.xmark', 
           isDestructive: true,
           onPress: () => confirmAction('مسح السجل', 'هل أنت متأكد من مسح سجل القراءة بالكامل؟', deleteAllSessions) 
         },
         { 
-          title: 'إعادة ضبط الإحصائيات', 
+          title: 'إعادة ضبط الإحصائيات لصفر', 
           icon: 'arrow.counterclockwise', 
           isDestructive: true,
           onPress: () => confirmAction('إعادة الضبط', 'هل أنت متأكد من إعادة ضبط جميع الإحصائيات؟', resetStatistics) 
@@ -85,20 +85,24 @@ export default function MoreScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
         <ProfileHeader 
           profile={profile} 
           streak={streak} 
           levelBadge={levelBadge} 
           onUpdatePhoto={handleUpdatePhoto} 
         />
-        <StatisticsGrid stats={stats} />
-        <MonthlyReadingChart sessions={sessions} />
-        <ReadingHistoryList sessions={sessions} books={books} />
-        <SettingsMenu sections={settingsSections} />
+        
+        <View style={styles.bodyContent}>
+          <StatisticsGrid stats={stats} />
+          <MonthlyReadingChart sessions={sessions} />
+          <ReadingHistoryList sessions={sessions} books={books} />
+          <SettingsMenu sections={settingsSections} />
+        </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -108,7 +112,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   scrollContent: {
-    padding: 20,
     paddingBottom: 40,
   },
+  bodyContent: {
+    paddingHorizontal: 20,
+    marginTop: 10,
+  }
 });

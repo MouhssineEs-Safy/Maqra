@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SymbolView } from 'expo-symbols';
-import { Colors } from '../../constants/Colors';
+import { Colors, Shadows } from '../../constants/Colors';
 
 interface MenuItem {
   title: string;
@@ -68,27 +68,28 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
     color: Colors.text,
     textAlign: 'right',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   menuCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 20,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: 'rgba(0,0,0,0.03)',
     overflow: 'hidden',
+    ...Shadows.medium,
   },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -100,15 +101,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   menuItemText: {
-    fontSize: 16,
+    fontSize: 17,
     color: Colors.text,
-    marginRight: 12,
-    fontWeight: '500',
+    marginRight: 16,
+    fontWeight: '600',
   },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },

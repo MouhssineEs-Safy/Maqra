@@ -17,7 +17,7 @@ interface StatisticsGridProps {
 const StatCard = ({ title, value, icon, color }: Stat) => (
   <View style={styles.card}>
     <View style={[styles.iconContainer, { backgroundColor: `${color}15` }]}>
-      <SymbolView name={icon as any} size={24} tintColor={color} />
+      <SymbolView name={icon as any} size={28} tintColor={color} />
     </View>
     <View style={styles.textContainer}>
       <Text style={styles.value}>{value}</Text>
@@ -41,40 +41,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 30,
   },
   card: {
     width: '48%',
     backgroundColor: Colors.surface,
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 24,
+    padding: 20,
     marginBottom: 16,
     flexDirection: 'column',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadows.soft,
+    borderColor: 'rgba(0,0,0,0.03)',
+    ...Shadows.medium,
   },
   iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   textContainer: {
     alignItems: 'center',
   },
   value: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 26,
+    fontWeight: '900',
     color: Colors.text,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   title: {
-    fontSize: 13,
+    fontSize: 14,
     color: Colors.textMuted,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });
