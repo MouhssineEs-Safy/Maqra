@@ -1,76 +1,102 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
-import { Colors, Shadows } from '../../constants/Colors';
+import { View, StyleSheet, ScrollView, SafeAreaView, Alert } from 'react-native';
+import { Colors } from '../../constants/Colors';
 import { useProfileStore } from '../../store/useProfileStore';
 import { useBookStore } from '../../store/useBookStore';
-import { SymbolView } from 'expo-symbols';
+import { useSessionStore } from '../../store/useSessionStore';
 
-// Reusable Stat Card styled for RTL Arabic theme
-const ArabicStatCard = ({ title, value, iconName }: { title: string, value: string | number, iconName: string }) => (
-  <View style={styles.statCard}>
-    <View style={styles.statIconContainer}>
-       <SymbolView name={iconName as any} size={24} tintColor={Colors.primary} />
-    </View>
-    <View style={styles.statTextContainer}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statTitle}>{title}</Text>
-    </View>
-  </View>
-);
+// Components
+import { ProfileHeader } from '../../components/profile/ProfileHeader';
+import { StatisticsGrid } from '../../components/profile/StatisticsGrid';
+import { MonthlyReadingChart } from '../../components/profile/MonthlyReadingChart';
+import { ReadingHistoryList } from '../../components/profile/ReadingHistoryList';
+import { SettingsMenu } from '../../components/profile/SettingsMenu';
 
 export default function MoreScreen() {
-  const { profile } = useProfileStore();
-  const books = useBookStore((state) => state.books);
+  const { profile, updateProfile, resetStatistics } = useProfileStore();
+  const { books, deleteAllBooks } = useBookStore();
+  const { sessions, deleteAllSessions } = useSessionStore();
   
   const totalBooks = books.filter(b => b.status === 'Completed').length;
   const totalPages = books.reduce((sum, b) => b.status === 'Completed' ? sum + b.totalPages : sum + b.currentPage, 0);
+  const totalReadingTime = sessions.reduce((sum, s) => sum + s.duration, 0);
+  const totalReadingHours = Math.floor(totalReadingTime / 3600);
+
+  // Compute Streak and Level
+  const streak = 12; // We can compute this dynamically if we have daily sessions logic, for now static 12
+  const levelBadge = totalBooks > 10 ? 'قارئ متقدم' : totalBooks > 5 ? 'قارئ نشط' : 'قارئ مبتدئ';
+
+  const stats = [
+    { title: 'إجمالي الكتب', value: totalBooks, icon: 'book.closed.fill', color: Colors.primary },
+    { title: 'إجمالي الصفحات', value: totalPages, icon: 'doc.text.fill', color: '#4CAF50' },
+    { title: 'وقت القراءة', value: `${totalReadingHours} س`, icon: 'clock.fill', color: '#FF9800' },
+    { title: 'الهدف السنوي', value: profile.yearlyGoal, icon: 'target', color: '#E91E63' },
+  ];
+
+  const handleUpdatePhoto = (uri: string) => {
+    updateProfile({ photo: uri });
+  };
+
+  const confirmAction = (title: string, message: string, onConfirm: () => void) => {
+    Alert.alert(
+      title,
+      message,
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        { text: 'تأكيد', style: 'destructive', onPress: onConfirm }
+      ]
+    );
+  };
+
+  const settingsSections = [
+    {
+      title: 'الإعدادات',
+      items: [
+        { title: 'تعديل الملف الشخصي', icon: 'person.crop.circle', onPress: () => {}, color: Colors.primary },
+        { title: 'تغيير اللغة', icon: 'globe', onPress: () => {}, color: '#2196F3' },
+        { title: 'هدف القراءة', icon: 'flag', onPress: () => {}, color: '#4CAF50' },
+        { title: 'الإشعارات', icon: 'bell.fill', onPress: () => updateProfile({ notifications: !profile.notifications }), color: '#FF9800' },
+        { title: 'المظهر', icon: 'moon.fill', onPress: () => updateProfile({ theme: profile.theme === 'dark' ? 'light' : 'dark' }), color: '#673AB7' },
+      ]
+    },
+    {
+      title: 'منطقة الخطر',
+      items: [
+        { 
+          title: 'حذف جميع الكتب', 
+          icon: 'trash.fill', 
+          isDestructive: true,
+          onPress: () => confirmAction('حذف جميع الكتب', 'هل أنت متأكد من حذف جميع الكتب؟ لا يمكن التراجع عن هذا الإجراء.', deleteAllBooks) 
+        },
+        { 
+          title: 'مسح سجل القراءة', 
+          icon: 'clock.badge.xmark', 
+          isDestructive: true,
+          onPress: () => confirmAction('مسح السجل', 'هل أنت متأكد من مسح سجل القراءة بالكامل؟', deleteAllSessions) 
+        },
+        { 
+          title: 'إعادة ضبط الإحصائيات', 
+          icon: 'arrow.counterclockwise', 
+          isDestructive: true,
+          onPress: () => confirmAction('إعادة الضبط', 'هل أنت متأكد من إعادة ضبط جميع الإحصائيات؟', resetStatistics) 
+        },
+      ]
+    }
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>الإحصائيات والملف الشخصي</Text>
-      </View>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* Profile Info */}
-        <View style={styles.profileSection}>
-          <View style={styles.avatar}>
-             <SymbolView name="person.crop.circle.fill" size={80} tintColor={Colors.accent} />
-          </View>
-          <Text style={styles.name}>{profile.name}</Text>
-          <Text style={styles.streak}>🔥 سلسلة القراءة: 12 يوماً</Text>
-        </View>
-
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          <ArabicStatCard title="إجمالي الكتب" value={totalBooks} iconName="book.closed.fill" />
-          <ArabicStatCard title="إجمالي الصفحات" value={totalPages} iconName="doc.text.fill" />
-          <ArabicStatCard title="وقت القراءة" value="24 س" iconName="clock.fill" />
-          <ArabicStatCard title="الهدف السنوي" value={profile.yearlyGoal} iconName="target" />
-        </View>
-
-        {/* Chart Placeholder */}
-        <View style={styles.chartSection}>
-          <Text style={styles.sectionTitle}>القراءة الشهرية</Text>
-          <View style={styles.chartPlaceholder}>
-            <SymbolView name="chart.bar.fill" size={48} tintColor={Colors.accent} />
-            <Text style={styles.placeholderText}>سيتم عرض الرسم البياني هنا</Text>
-          </View>
-        </View>
-
-        {/* History Placeholder */}
-        <View style={styles.chartSection}>
-          <Text style={styles.sectionTitle}>سجل القراءة</Text>
-          <View style={styles.historyItem}>
-            <Text style={styles.historyText}>قرأت 20 صفحة من العادات الذرية</Text>
-            <Text style={styles.historyDate}>اليوم</Text>
-          </View>
-          <View style={styles.historyItem}>
-            <Text style={styles.historyText}>أنهيت كتاب لغز المنزل الغامض</Text>
-            <Text style={styles.historyDate}>أمس</Text>
-          </View>
-        </View>
-        
+        <ProfileHeader 
+          profile={profile} 
+          streak={streak} 
+          levelBadge={levelBadge} 
+          onUpdatePhoto={handleUpdatePhoto} 
+        />
+        <StatisticsGrid stats={stats} />
+        <MonthlyReadingChart sessions={sessions} />
+        <ReadingHistoryList sessions={sessions} books={books} />
+        <SettingsMenu sections={settingsSections} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -81,133 +107,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  header: {
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    backgroundColor: Colors.surface,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.text,
-  },
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
-  },
-  profileSection: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: Colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    ...Shadows.soft,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.text,
-    marginBottom: 8,
-  },
-  streak: {
-    fontSize: 16,
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-  statsGrid: {
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  statCard: {
-    width: '48%',
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    flexDirection: 'column',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadows.soft,
-  },
-  statIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(43, 103, 119, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  statTextContainer: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Colors.text,
-    marginBottom: 4,
-  },
-  statTitle: {
-    fontSize: 12,
-    color: Colors.textMuted,
-  },
-  chartSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.text,
-    textAlign: 'right',
-    marginBottom: 12,
-  },
-  chartPlaceholder: {
-    height: 160,
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadows.soft,
-  },
-  placeholderText: {
-    marginTop: 12,
-    color: Colors.textMuted,
-    fontSize: 14,
-  },
-  historyItem: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.surface,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  historyText: {
-    fontSize: 14,
-    color: Colors.text,
-    textAlign: 'right',
-    flex: 1,
-  },
-  historyDate: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginLeft: 12,
   },
 });

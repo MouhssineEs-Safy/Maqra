@@ -11,6 +11,7 @@ interface BookState {
   updateProgress: (id: string, pagesRead: number) => void;
   seedMockData: () => void;
   clearBooks: () => void;
+  deleteAllBooks: () => void;
 }
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -183,7 +184,8 @@ export const useBookStore = create<BookState>()(
           }),
         })),
       seedMockData: () => set({ books: MOCK_BOOKS }),
-      clearBooks: () => set({ books: [] })
+      clearBooks: () => set({ books: [] }),
+      deleteAllBooks: () => set({ books: [] })
     }),
     {
       name: 'maqra-book-storage',

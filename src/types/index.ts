@@ -27,4 +27,7 @@ export interface Profile {
   name: string;
   photo?: string; // local uri
   yearlyGoal: number;
+  theme?: 'system' | 'light' | 'dark';
+  language?: 'ar' | 'en' | 'fr' | 'am';
+  notifications?: boolean;
 }

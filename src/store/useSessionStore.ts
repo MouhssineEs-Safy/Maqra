@@ -7,6 +7,7 @@ interface SessionState {
   sessions: ReadingSession[];
   addSession: (session: Omit<ReadingSession, 'id'>) => void;
   deleteSession: (id: string) => void;
+  deleteAllSessions: () => void;
   getSessionsForBook: (bookId: string) => ReadingSession[];
 }
 
@@ -22,6 +23,10 @@ export const useSessionStore = create<SessionState>()(
         set((state) => ({
           sessions: state.sessions.filter((s) => s.id !== id),
         })),
+      deleteAllSessions: () =>
+        set({
+          sessions: [],
+        }),
       getSessionsForBook: (bookId) => get().sessions.filter((s) => s.bookId === bookId),
     }),
     {
